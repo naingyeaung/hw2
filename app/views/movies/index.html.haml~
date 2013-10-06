@@ -7,7 +7,7 @@
     - if (@all_checked || @cache[rating] == true)
       = check_box_tag "ratings[#{rating}]", 1, true, :id=>"ratings_#{rating}"
     - else
-      = check_box_tag "ratings[#{rating}]", :id=>"ratings_#{rating}"  
+        = check_box_tag "ratings[#{rating}]", :id=>"ratings_#{rating}"  
   = submit_tag 'Refresh', :id =>"ratings_submit"
 %table#movies
   %thead

@@ -3,7 +3,7 @@ class Movie < ActiveRecord::Base
     ratings = Set.new()
     movies = Movie.all()
     movies.each do |movie|
-        ratings.add(movie.rating)
+        ratings.add(movie)
     end
     return ratings
   end
