@@ -6,6 +6,7 @@ class MoviesController < ApplicationController
     # will render app/views/movies/show.<extension> by default
   end
 
+  
   def index
     session["init"] = true
     @change_date = false
@@ -13,64 +14,47 @@ class MoviesController < ApplicationController
     @all_ratings = Movie.allratings()
     @all_checked = true
     @cache = Hash.new()
-    called = false
-    if (params[:sort_by] == nil and session.has_key?(:sort_by))
-        params[:sort_by] = session[:sort_by]
+    if (params[:sort_by] == nil and params[:ratings] == nil and !session.has_key?(:sort_by) and !session.has_key?(:ratings))
+      params[:ratings] = Hash[@all_ratings.zip  Array.new(@all_ratings.size,1)]
+      session[:ratings] = params[:ratings]
+    elsif (params[:ratings] == nil and params[:sort_by] == nil and session.has_key?(:ratings))
+      params[:ratings] = session[:ratings]
+      params[:sort_by] = session[:sort_by]
+      flash.keep
+      redirect_to movies_path(:sort_by => session[:sort_by], :ratings => session[:ratings])
     end
-    if (params[:ratings] == nil and session.has_key?(:ratings))
-        params[:ratings] = session[:ratings]
+    if (params[:sort_by] != nil and session.has_key?(:ratings)) #sort_by chosen, ratings is not overrided
+      params[:ratings] = session[:ratings] #happen only when sort_by is chosen
     end
-    if (params[:sort_by] == "date")
-        @movies = Movie.find(:all, :order => "release_date")
-        @change_date = true
-        @change_title = false
-        session[:sort_by] = "date"
-        called = true
+    if (params[:sort_by] == nil and session.has_key?(:sort_by)) #sort by not chosen but there is one at the past
+      params[:sort_by] = session[:sort_by] #happen when only ratings are chosen
     end
-    if (params[:sort_by] == "title")
-        @movies = Movie.find(:all, :order => "title")
-        @change_title = true
-        @change_date = false
-        session[:sort_by] = "title"
-        called = true
-    end
-    if (params[:ratings] and !params[:sort_by]) # called the first time
-        chosen = params[:ratings]
-        session[:ratings] = chosen
-        if (chosen != nil)
-          ratings = chosen.keys
-          @movies = Array.new
-          ratings.each do |rating|
-            @movies.concat(Movie.find(:all, :conditions => ["rating = ?", rating]))
-            @cache[rating] = true
-            @all_checked = false
-          end
-        end
-        called = true
-    end
-    #to be deleted
-    if (params[:ratings] and params[:sort_by])
-        chosen = params[:ratings]
-        session[:ratings] = chosen        
-        if (chosen != nil)
-            ratings = chosen.keys
-            holder = Array.new
-            ratings.each do |ratin|
-              holder.concat(@movies.find_all{|movie| movie.rating == ratin})
-              @cache[ratin] = true
-              @all_checked = false
-            end
-            @movies = holder
-        end
-    end 
+    
+    ratings = params[:ratings].keys
 
-    if (!called and (session.has_key?(:ratings) or session.has_key?(:sort_by)))
-        flash.keep        
-        index
-    else
-        if (!called)
-          @movies = Movie.find(:all)
-        end
+    if (params[:ratings] and params[:sort_by])
+      @movies = Movie.find(:all,:conditions=>{:rating => ratings}, :order => params[:sort_by])
+      session[:sort_by] = params[:sort_by]
+      session[:ratings] = params[:ratings]
+    elsif (params[:ratings])
+      @movies = Movie.find(:all, :conditions=>{:rating => ratings})
+      session[:ratings] = params[:ratings]
+    end
+
+
+
+    if (params[:sort_by] == "release_date")
+      @change_date = true
+      @change_title = false
+    elsif (params[:sort_by] == "title")
+      @change_date = false
+      @change_title = true
+    end
+    if (params[:ratings])
+      ratings.each do |rating|
+        @cache[rating] = true
+        @all_checked = false
+      end
     end
   end
 
